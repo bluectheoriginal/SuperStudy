@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Tool</title>
+    <title>Super study-guide-item</title>
     <style>
         * {
             box-sizing: border-box;
@@ -249,6 +249,39 @@
             color: #adb5bd;
         }
         
+        .instant-feedback-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+        }
+        
+        .instant-feedback-container input {
+            margin-right: 10px;
+        }
+        
+        .feedback-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .feedback-correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .feedback-incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -274,7 +307,8 @@
     <div class="container">
         <header>
             <h1>Study Tool</h1>
-            <p class="subtitle">Create study guides and test your knowledge</p>
+            <p class="subtitle">By: Ryker Hernandez</p>
+            <p class="subtitle">Create Study Guides, and test your knowledge.</p>
         </header>
         
         <div class="tabs">
@@ -308,6 +342,12 @@
                             <option value="">-- Select a study guide --</option>
                         </select>
                     </div>
+                    
+                    <div class="instant-feedback-container">
+                        <input type="checkbox" id="instant-feedback">
+                        <label for="instant-feedback">Show instant feedback (see if answers are correct immediately)</label>
+                    </div>
+                    
                     <button id="start-quiz">Start Quiz</button>
                 </div>
                 
@@ -318,6 +358,7 @@
                     <div id="question-display">
                         <!-- Question will be displayed here -->
                     </div>
+                    <div id="feedback-message" class="feedback-message"></div>
                     <div class="quiz-controls">
                         <button id="prev-question" class="secondary">Previous</button>
                         <button id="next-question">Next</button>
@@ -347,6 +388,7 @@
         let currentQuestionIndex = 0;
         let userAnswers = [];
         let quizInProgress = false;
+        let instantFeedbackEnabled = false;
 
         // DOM Elements
         const tabs = document.querySelectorAll('.tab');
@@ -355,9 +397,11 @@
         const addQuestionBtn = document.getElementById('add-question');
         const saveGuideBtn = document.getElementById('save-guide');
         const selectGuide = document.getElementById('select-guide');
+        const instantFeedbackCheckbox = document.getElementById('instant-feedback');
         const startQuizBtn = document.getElementById('start-quiz');
         const quizContainer = document.getElementById('quiz-container');
         const questionDisplay = document.getElementById('question-display');
+        const feedbackMessage = document.getElementById('feedback-message');
         const prevQuestionBtn = document.getElementById('prev-question');
         const nextQuestionBtn = document.getElementById('next-question');
         const resultsContainer = document.getElementById('results-container');
@@ -377,6 +421,9 @@
             
             addQuestionBtn.addEventListener('click', addQuestion);
             saveGuideBtn.addEventListener('click', saveStudyGuide);
+            instantFeedbackCheckbox.addEventListener('change', function() {
+                instantFeedbackEnabled = this.checked;
+            });
             startQuizBtn.addEventListener('click', startQuiz);
             prevQuestionBtn.addEventListener('click', showPreviousQuestion);
             nextQuestionBtn.addEventListener('click', showNextQuestion);
@@ -657,7 +704,13 @@
                     this.classList.add('selected');
                     
                     // Store the user's answer
-                    userAnswers[currentQuestionIndex] = parseInt(this.dataset.index);
+                    const selectedIndex = parseInt(this.dataset.index);
+                    userAnswers[currentQuestionIndex] = selectedIndex;
+                    
+                    // Show instant feedback if enabled
+                    if (instantFeedbackEnabled) {
+                        showInstantFeedback(question, selectedIndex);
+                    }
                 });
             });
             
@@ -668,6 +721,33 @@
             // Update button states
             prevQuestionBtn.disabled = currentQuestionIndex === 0;
             nextQuestionBtn.textContent = currentQuestionIndex === currentQuiz.length - 1 ? 'Finish' : 'Next';
+            
+            // Clear feedback message
+            feedbackMessage.style.display = 'none';
+        }
+
+        // Show instant feedback for the selected answer
+        function showInstantFeedback(question, selectedIndex) {
+            const isCorrect = selectedIndex === question.correctIndex;
+            
+            // Update feedback message
+            feedbackMessage.textContent = isCorrect 
+                ? "Correct! Well done!" 
+                : "Incorrect. Try again!";
+            
+            feedbackMessage.className = `feedback-message ${isCorrect ? 'feedback-correct' : 'feedback-incorrect'}`;
+            feedbackMessage.style.display = 'block';
+            
+            // Highlight correct and incorrect answers
+            questionDisplay.querySelectorAll('.answer-option').forEach(option => {
+                const optionIndex = parseInt(option.dataset.index);
+                
+                if (optionIndex === question.correctIndex) {
+                    option.classList.add('correct');
+                } else if (optionIndex === selectedIndex && !isCorrect) {
+                    option.classList.add('incorrect');
+                }
+            });
         }
 
         // Show the previous question
