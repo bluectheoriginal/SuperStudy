@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super study-guide-item</title>
+    <title>SuperStudy Pro - Your Personal Study Tool</title>
     <style>
         * {
             box-sizing: border-box;
@@ -135,6 +135,8 @@
             font-size: 1rem;
             font-weight: 600;
             transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         
         button:hover {
@@ -145,6 +147,10 @@
         button.secondary {
             background: #f1f1f1;
             color: #333;
+        }
+        
+        button.success {
+            background: linear-gradient(to right, #28a745, #20c997);
         }
         
         .question-card {
@@ -282,6 +288,21 @@
             border: 1px solid #f5c6cb;
         }
         
+        .storage-info {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #0066cc;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -300,15 +321,24 @@
                 width: 100%;
                 margin-bottom: 10px;
             }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons button {
+                width: 100%;
+                margin-right: 0;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Study Tool</h1>
+            <h1>SuperStudy Pro</h1>
             <p class="subtitle">By: Ryker Hernandez</p>
-            <p class="subtitle">Create Study Guides, and test your knowledge.</p>
+            <p class="subtitle">Create, study, and master any subject</p>
         </header>
         
         <div class="tabs">
@@ -329,8 +359,15 @@
                     <!-- Questions will be added here dynamically -->
                 </div>
                 
-                <button id="add-question">Add Question</button>
-                <button id="save-guide">Save Study Guide</button>
+                <div class="action-buttons">
+                    <button id="add-question">Add Question</button>
+                    <button id="save-guide" class="success">Save Study Guide</button>
+                </div>
+                
+                <div class="storage-info">
+                    <strong>Note:</strong> Your study guides are automatically saved to your browser's local storage. 
+                    They will persist even after you close the browser and will be available when you return to this site.
+                </div>
             </div>
             
             <!-- Study Mode Tab -->
@@ -373,9 +410,19 @@
             <!-- My Study Guides Tab -->
             <div class="tab-content" id="guides">
                 <h2>My Study Guides</h2>
+                <p>All your saved study guides are listed below. They are stored locally in your browser.</p>
+                
+                <div class="action-buttons">
+                    <button id="export-all" class="secondary">Export All Guides</button>
+                    <button id="import-guides" class="secondary">Import Guides</button>
+                    <button id="clear-all" class="secondary">Clear All Guides</button>
+                </div>
+                
                 <ul class="study-guide-list" id="guide-list">
                     <!-- Study guides will be listed here -->
                 </ul>
+                
+                <input type="file" id="import-file" style="display: none;" accept=".json">
             </div>
         </div>
     </div>
@@ -407,6 +454,10 @@
         const resultsContainer = document.getElementById('results-container');
         const guideList = document.getElementById('guide-list');
         const quizProgress = document.getElementById('quiz-progress');
+        const exportAllBtn = document.getElementById('export-all');
+        const importGuidesBtn = document.getElementById('import-guides');
+        const clearAllBtn = document.getElementById('clear-all');
+        const importFile = document.getElementById('import-file');
 
         // Initialize the app
         function init() {
@@ -427,9 +478,18 @@
             startQuizBtn.addEventListener('click', startQuiz);
             prevQuestionBtn.addEventListener('click', showPreviousQuestion);
             nextQuestionBtn.addEventListener('click', showNextQuestion);
+            exportAllBtn.addEventListener('click', exportAllGuides);
+            importGuidesBtn.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', importGuides);
+            clearAllBtn.addEventListener('click', clearAllGuides);
             
             // Add initial question
             addQuestion();
+            
+            // Show storage info if first visit
+            if (!localStorage.getItem('studyGuides')) {
+                localStorage.setItem('studyGuides', JSON.stringify([]));
+            }
         }
 
         // Switch between tabs
@@ -636,6 +696,73 @@
             updateGuideList();
         }
 
+        // Export all study guides
+        function exportAllGuides() {
+            if (studyGuides.length === 0) {
+                alert('No study guides to export.');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(studyGuides, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'study-guides.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // Import study guides
+        function importGuides(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedGuides = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(importedGuides)) {
+                        throw new Error('Invalid file format');
+                    }
+                    
+                    // Merge with existing guides
+                    studyGuides = studyGuides.concat(importedGuides);
+                    localStorage.setItem('studyGuides', JSON.stringify(studyGuides));
+                    
+                    updateGuideSelect();
+                    updateGuideList();
+                    
+                    alert(`Successfully imported ${importedGuides.length} study guide(s)!`);
+                    
+                    // Reset file input
+                    importFile.value = '';
+                } catch (error) {
+                    alert('Error importing study guides. Please make sure you selected a valid JSON file.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Clear all study guides
+        function clearAllGuides() {
+            if (studyGuides.length === 0) {
+                alert('No study guides to clear.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to delete ALL study guides? This action cannot be undone.')) {
+                studyGuides = [];
+                localStorage.setItem('studyGuides', JSON.stringify(studyGuides));
+                updateGuideSelect();
+                updateGuideList();
+                alert('All study guides have been cleared.');
+            }
+        }
+
         // Start the quiz
         function startQuiz() {
             const selectedGuideId = selectGuide.value;
@@ -788,8 +915,10 @@
                     <h2>Quiz Complete!</h2>
                     <div class="score">${score}%</div>
                     <p>You answered ${correctCount} out of ${currentQuiz.length} questions correctly.</p>
-                    <button id="restart-quiz">Restart Quiz</button>
-                    <button id="new-quiz" class="secondary">New Quiz</button>
+                    <div class="action-buttons">
+                        <button id="restart-quiz">Restart Quiz</button>
+                        <button id="new-quiz" class="secondary">New Quiz</button>
+                    </div>
                 </div>
             `;
             
