@@ -1,0 +1,22 @@
+[
+  {
+    "id": "sample-math",
+    "title": "Basic Mathematics",
+    "description": "Fundamental math concepts for beginners",
+    "category": "math",
+    "questions": [
+      {
+        "question": "What is 15 + 27?",
+        "answers": ["32", "42", "52", "62"],
+        "correctIndex": 1
+      },
+      {
+        "question": "What is 8 × 7?",
+        "answers": ["48", "56", "64", "72"],
+        "correctIndex": 1
+      }
+    ],
+    "createdAt": "2023-01-01",
+    "publishedAt": "2023-01-01"
+  }
+]
